@@ -1,5 +1,10 @@
 
 public class URStack<E> extends URLinkedList<E>{
+
+	public URStack() {
+		super();
+	}
+	
 	public void push(E e) { 
 		this.addFirst(e);
 	}
@@ -8,3 +13,4 @@ public class URStack<E> extends URLinkedList<E>{
 		return this.pollFirst().element();
 	}
 }
+
