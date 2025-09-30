@@ -10,6 +10,11 @@ public class URQueue<E> extends URLinkedList<E> {
 	}
 	
 	public E dequeue() {
-		return this.pollLast().element();
+		return this.pollFirst().element();
+	}
+	
+	public E peek() {
+		return this.peekFirst().element();
 	}
 }
+
