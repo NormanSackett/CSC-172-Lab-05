@@ -45,9 +45,15 @@ public class InfixCalc {
 		b.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				try {
 				URQueue<String> postfixQueue = infixToPostfix(ifix.getText());
 				pfix.setText(postfixQueue.toString());
-				answer.setText(String.valueOf(evaluatePostfix(postfixQueue)));
+				double output = evaluatePostfix(postfixQueue);
+				if (output == Math.floor(output)) answer.setText(String.valueOf((int) output));
+				else answer.setText(String.valueOf(output));
+				} catch(InvalidOperatorException except) {
+					JOptionPane.showMessageDialog(null, except.getMessage());
+				}
 			}
 			
 		});
@@ -71,7 +77,7 @@ public class InfixCalc {
 				Double d1 = stack.pop();
 				Double d2 = stack.pop();
 				try {
-				output = performOperation(s, d1, d2);
+				output = performOperation(s, d2, d1);
 				} catch (InvalidOperatorException e) {
 					JOptionPane.showMessageDialog(null, e.getMessage());
 				}
@@ -102,41 +108,46 @@ public class InfixCalc {
 			if ((d1 == 1 || d1 == 0) && (d2 == 1 || d2 == 0)) return ((d1 != 0) || (d2 != 0)) ? 1 : 0;
 			else throw new InvalidOperatorException("one or more inputs for a logical operator are not 0 or 1");
 		}
-		throw new InvalidOperatorException("not a known operator");
+		throw new InvalidOperatorException("\"" + operation + "\" is not a known operator");
 	}
 	
 	
 	
-	public static URQueue<String> infixToPostfix(String input) { //performs infix-to-postfix algorithm
+	public static URQueue<String> infixToPostfix(String input) throws InvalidOperatorException { //performs infix-to-postfix algorithm
 		URQueue<String> outputQueue = new URQueue<String>();
 		URStack<String> stack = new URStack<String>();
 		
 		for (int i = 0; i < input.length(); i++) {
 			String s = input.substring(i, i + 1);
-			
-			//check is c is an operator or operand first
-			if (s.charAt(0) >= '0' && s.charAt(0) <= '9') {
-				char nextChar = s.charAt(0);
-				if (input.length() > i + 1) nextChar = input.substring(i + 1, i + 2).charAt(0);
-				while (((nextChar >= '0' && nextChar <= '9') || nextChar == '.') && input.length() > i + 1) { //handles numbers with more than one digit and numbers with decimal values
-					i++;
-					s += nextChar;
-					nextChar = input.substring(i + 1, i + 2).charAt(0);
-				}
-				outputQueue.enqueue(s); //if operand, add to the queue
-			}
-			else if (s == "(") stack.push(s); //if an open parenthesis, push to the stack
-			else if (s == ")") { //if a closed parenthesis, pop from the stack until the open parenthesis is hit
-				while (!stack.isEmpty() && stack.peek() != "(") outputQueue.enqueue(s);
+			if (!s.equals(" ")) { //ignore spaces
 				
-				stack.pop();
-			}
-			else if (s != " ") { // if an operator, enqueue operators until an operator of less priority is hit (spaces are ignored)
-				while (!stack.isEmpty() && getPriority(s.charAt(0)) > getPriority(stack.peek().charAt(0))) {
-					outputQueue.enqueue(stack.pop());
+				//check is c is an operator or operand first
+				if (s.charAt(0) >= '0' && s.charAt(0) <= '9') {
+					if (input.length() > i + 1) {
+					char nextChar = input.substring(i + 1, i + 2).charAt(0);
+					while (((nextChar >= '0' && nextChar <= '9') || nextChar == '.') && input.length() > i + 1) { //handles numbers with more than one digit and numbers with decimal values
+						i++;
+						s += nextChar;
+						if (input.length() > i + 1) nextChar = input.substring(i + 1, i + 2).charAt(0);
+						else nextChar = 0;
+					}
+					}
+					outputQueue.enqueue(s); //if operand, add to the queue
 				}
-				//if (!stack.isEmpty()) outputQueue.enqueue(stack.pop());
-				stack.push(s);
+				else if (s.equals("(")) stack.push(s); //if an open parenthesis, push to the stack
+				else if (s.equals(")")) { //if a closed parenthesis, pop from the stack until the open parenthesis is hit
+					while (!stack.peek().equals("(")) {
+						if (stack.isEmpty()) throw new InvalidOperatorException("missing parenthesis");
+						outputQueue.enqueue(stack.pop());
+					}
+					stack.pop();
+				}
+				else { // if an operator, enqueue operators until an operator of less priority is hit
+					while (!stack.isEmpty() && getPriority(s.charAt(0)) > getPriority(stack.peek().charAt(0))) {
+						outputQueue.enqueue(stack.pop());
+					}
+					stack.push(s);
+				}
 			}
 		}
 		while (!stack.isEmpty()) outputQueue.enqueue(stack.pop());
