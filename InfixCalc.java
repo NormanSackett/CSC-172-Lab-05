@@ -46,11 +46,13 @@ public class InfixCalc {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try {
-				URQueue<String> postfixQueue = infixToPostfix(ifix.getText());
+				URQueue<String> postfixQueue = infixToPostfix(ifix.getText().toLowerCase());
 				pfix.setText(postfixQueue.toString());
 				double output = evaluatePostfix(postfixQueue);
-				if (output == Math.floor(output)) answer.setText(String.valueOf((int) output));
+				
+				if (output == Math.floor(output)) answer.setText(String.valueOf((int) output)); //gets rid of yucky decimal point if the output is an integer value
 				else answer.setText(String.valueOf(output));
+				
 				} catch(InvalidOperatorException except) {
 					JOptionPane.showMessageDialog(null, except.getMessage());
 				}
@@ -59,7 +61,7 @@ public class InfixCalc {
 		});
 	}
 	
-	public static double evaluatePostfix(URQueue<String> queue) {
+	public static double evaluatePostfix(URQueue<String> queue) throws InvalidOperatorException {
 		double output = 0;
 		URStack<Double> stack = new URStack<Double>();
 		
@@ -67,11 +69,9 @@ public class InfixCalc {
 			String s = queue.dequeue();
 			char c = s.substring(0, 1).charAt(0);
 			if (c >= 48 && c <= 57) stack.push(Double.valueOf(s));
-			else if (s == "!") { //checks if the operator only takes one input
-				Double tempDoub = stack.pop();
-				if (tempDoub == 1 || tempDoub == 0) tempDoub = (double) ~tempDoub.intValue(); //bit flips for not operator
-				else return 0;
-				output = tempDoub;
+			else if (s.equals("!") || s.equals("sin") || s.equals("cos") || s.equals("tan")) { //checks for operators that take one input
+				output = performOperation(s, stack.pop());
+				stack.push(output);
 			}
 			else if (stack.size() != 1) {
 				Double d1 = stack.pop();
@@ -86,6 +86,18 @@ public class InfixCalc {
 			}
 		}
 		return output;
+	}
+	
+	public static double performOperation(String operation, double d) throws InvalidOperatorException {
+		switch (operation) {
+		case "!":
+			if (d == 1 || d == 0) return ~(int) d + 2;
+			else throw new InvalidOperatorException("the ! logical operator requires inputs of 0 or 1");
+		case "sin": return Math.sin(d);
+		case "cos": return Math.cos(d);
+		case "tan": return Math.tan(d);
+		}
+		throw new InvalidOperatorException("\"" + operation + "\" is not a known operator");
 	}
 	
 	public static double performOperation(String operation, double d1, double d2) throws InvalidOperatorException {
@@ -103,10 +115,10 @@ public class InfixCalc {
 		//for logical operators, the inputs must be ensured to be either 1 or 0
 		case "&":
 			if ((d1 == 1 || d1 == 0) && (d2 == 1 || d2 == 0)) return ((d1 != 0) && (d2 != 0)) ? 1 : 0;
-			else throw new InvalidOperatorException("one or more inputs for a logical operator are not 0 or 1");
+			else throw new InvalidOperatorException("the & logical operator requires inputs of 0 or 1");
 		case "|":
 			if ((d1 == 1 || d1 == 0) && (d2 == 1 || d2 == 0)) return ((d1 != 0) || (d2 != 0)) ? 1 : 0;
-			else throw new InvalidOperatorException("one or more inputs for a logical operator are not 0 or 1");
+			else throw new InvalidOperatorException("the | logical operator requires inputs of 0 or 1");
 		}
 		throw new InvalidOperatorException("\"" + operation + "\" is not a known operator");
 	}
@@ -124,13 +136,13 @@ public class InfixCalc {
 				//check is c is an operator or operand first
 				if (s.charAt(0) >= '0' && s.charAt(0) <= '9') {
 					if (input.length() > i + 1) {
-					char nextChar = input.substring(i + 1, i + 2).charAt(0);
-					while (((nextChar >= '0' && nextChar <= '9') || nextChar == '.') && input.length() > i + 1) { //handles numbers with more than one digit and numbers with decimal values
-						i++;
-						s += nextChar;
-						if (input.length() > i + 1) nextChar = input.substring(i + 1, i + 2).charAt(0);
-						else nextChar = 0;
-					}
+						char nextChar = input.substring(i + 1, i + 2).charAt(0);
+						while (((nextChar >= '0' && nextChar <= '9') || nextChar == '.') && input.length() > i + 1) { //handles numbers with more than one digit and numbers with decimal values
+							i++;
+							s += nextChar;
+							if (input.length() > i + 1) nextChar = input.substring(i + 1, i + 2).charAt(0);
+							else nextChar = 0;
+						}
 					}
 					outputQueue.enqueue(s); //if operand, add to the queue
 				}
@@ -142,7 +154,13 @@ public class InfixCalc {
 					}
 					stack.pop();
 				}
-				else { // if an operator, enqueue operators until an operator of less priority is hit
+				else {
+					if (input.length() > i && (s.equals("s") || s.equals("c") || s.equals("t"))) { // identify trig functions
+						s = input.substring(i, i + 3);
+						i += 2;
+					}
+					
+					// if an operator, enqueue operators until an operator of less priority is hit
 					while (!stack.isEmpty() && getPriority(s.charAt(0)) > getPriority(stack.peek().charAt(0))) {
 						outputQueue.enqueue(stack.pop());
 					}
@@ -156,10 +174,10 @@ public class InfixCalc {
 	}
 	
 	public static int getPriority(Character c) {
-		//priority form https://en.wikipedia.org/wiki/Order_of_operations#Programming_languages
+		//priority form https://en.wikipedia.org/wiki/Order_of_operations#Programming_languages (although unary operators are put first in priority)
 		// highest priority gets the smallest return value to allow easy expansion to further operators
-		if (c == '^') return 1;
-		if (c == '!') return 2;
+		if (c == '!' || c == 's' || c == 'c' || c == 't') return 1;
+		if (c == '^') return 2;
 		if (c == '/' || c == '*' || c == '%') return 3;
 		if (c == '-' || c == '+') return 4;
 		if (c == '>' || c == '<') return 5;
