@@ -147,7 +147,8 @@ public class URCalculator {
 		case "+": return d1 + d2;
 		case "-": return d1 - d2;
 		case "*": return d1 * d2;
-		case "/": return d1 / d2;
+		case "/": if (d2 == 0) throw new InvalidOperatorException("divide by zero error :(");
+				else return d1 / d2;
 		case "^": return Math.pow(d1,  d2);
 		case "%": return (int) d1 % (int) d2;
 		case ">": return (d1 > d2) ? 1 : 0; //ternary operator to map true to one and false to 0
@@ -229,3 +230,4 @@ public class URCalculator {
 		else return Integer.MAX_VALUE; //throw lowest possible priority if input is not an operator/ an unknown operator
 	}
 }
+
