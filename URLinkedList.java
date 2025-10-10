@@ -36,6 +36,18 @@ public class URLinkedList<E> implements URList<E>, Iterator<E> {
 		System.out.println("]");
 	}
 	
+	//converts the linked list to a string
+	public String toString() {
+		String s = "";
+		URNode<E> curNode = head;
+		while (curNode.next() != tail) {
+			if (curNode != head) s += " ";
+			curNode = curNode.next();
+			s += curNode.element().toString();
+		}
+		return s;
+	}
+	
 	// Inserts the specified element at the beginning of this list.
 	public void addFirst(E e) {
 		URNode<E> n = head.next();
@@ -307,3 +319,4 @@ public class URLinkedList<E> implements URList<E>, Iterator<E> {
 		}
 	}
 }
+
