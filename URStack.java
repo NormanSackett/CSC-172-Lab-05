@@ -1,6 +1,6 @@
 
 public class URStack<E> extends URLinkedList<E>{
-
+	
 	public URStack() {
 		super();
 	}
@@ -12,5 +12,8 @@ public class URStack<E> extends URLinkedList<E>{
 	public E pop() {
 		return this.pollFirst().element();
 	}
+	
+	public E peek() {
+		return this.peekFirst().element();
+	}
 }
-
