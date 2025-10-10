@@ -2,26 +2,33 @@ import javax.swing.*;
 import java.awt.Font;
 import java.awt.Color;
 import java.awt.event.*;
+import java.io.*;
+import java.nio.file.Files;
 
 public class InfixCalc {
 
 	public static void main(String[] args) { //sets up Java Swing GUI elements and adds button action event
 		JFrame frame = new JFrame();
 		frame.setVisible(true);
-		frame.setBounds(300, 100, 300, 300);
+		frame.setBounds(300, 100, 400, 300);
 		frame.setLayout(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
+		// declare objects and add them to frame
 		JLabel ifixInputLabel = new JLabel();
 		JTextField ifix = new JTextField();
 		JLabel pfix = new JLabel();
 		JLabel answer = new JLabel();
 		JButton b = new JButton();
+		JButton fileButton = new JButton();
+		JButton downloadButton = new JButton();
 		frame.add(ifixInputLabel);
 		frame.add(pfix);
 		frame.add(ifix);
 		frame.add(answer);
 		frame.add(b);
+		frame.add(fileButton);
+		frame.add(downloadButton);
 		
 		ifixInputLabel.setBounds(5, 0, 200, 20);
 		ifixInputLabel.setText("enter infix expression:");
@@ -56,9 +63,78 @@ public class InfixCalc {
 				} catch(InvalidOperatorException except) {
 					JOptionPane.showMessageDialog(null, except.getMessage());
 				}
+			}});
+		downloadButton.setBounds(220, 80, 150, 40);
+		downloadButton.setText("download output file");
+		downloadButton.setBackground(Color.lightGray);
+		downloadButton.setBorder(BorderFactory.createBevelBorder(0));
+		downloadButton.setVisible(false);
+		
+		fileButton.setBounds(220, 20, 150, 40);
+		fileButton.setText("upload file");
+		fileButton.setBackground(Color.lightGray);
+		fileButton.setBorder(BorderFactory.createBevelBorder(0));
+		fileButton.setFont(projectFont);
+		fileButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) { //handles GUI aspects of file input
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
+				fileChooser.setBackground(Color.lightGray);
+				fileChooser.setBorder(BorderFactory.createBevelBorder(0));
+				//sets the default file view to scroll vertically
+				fileChooser.getActionMap().get("viewTypeDetails").actionPerformed(new ActionEvent(fileChooser, ActionEvent.ACTION_PERFORMED, ""));
+				fileChooser.setFont(projectFont);
+				
+				if (fileChooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
+					File f = fileChooser.getSelectedFile();
+					try {
+						String[] output = getFileInput(f);
+						downloadButton.setVisible(true);
+						
+						downloadButton.addActionListener( new ActionListener() {
+							@Override
+							public void actionPerformed(ActionEvent e) {
+								if (output != null) {
+									try {
+										String path = System.getProperty("user.home") + "\\Downloads\\INFIX_TO_POSTFIX_CALC_OUTPUT.txt";
+										FileWriter writer = new FileWriter(path);
+										for (int i = 0; i < output.length; i++) {
+											writer.write(output[i] + "\n");
+										}
+										writer.close();
+									} catch (IOException err) {
+										err.printStackTrace();
+									}
+									downloadButton.setVisible(false);
+								}
+							}});
+					} catch (InvalidOperatorException err) {
+						JOptionPane.showMessageDialog(null, err.getMessage());
+					}
+				}
+			}});
+	}
+	
+	public static String[] getFileInput(File f) throws InvalidOperatorException {
+		try {
+			String type = Files.probeContentType(f.toPath());
+			if (type.contains("text")) {
+				BufferedReader reader = new BufferedReader(new FileReader(f));
+				int lineNum = (int) Files.lines(f.toPath()).count();
+				String[] output = new String[lineNum];
+				String line;
+				for (int i = 0; i < lineNum; i++) {
+					line = reader.readLine();
+					output[i] = String.valueOf(evaluatePostfix(infixToPostfix(line)));
+				}
+				reader.close();
+				return output;
 			}
-			
-		});
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(null, e.getMessage());
+		}
+		return null; //if there is an error, do not return outputs
 	}
 	
 	public static double evaluatePostfix(URQueue<String> queue) throws InvalidOperatorException {
